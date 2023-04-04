@@ -1,0 +1,94 @@
+# Importing libraries
+import random
+import math
+
+# Number of cities
+n = 25
+
+# List of cities with their coordinates
+cities = [(random.randrange(0, 100), random.randrange(0, 100)) for i in range(n)]
+
+# Distance matrix
+dist = [[math.hypot(cities[i][0] - cities[j][0], cities[i][1] - cities[j][1]) for i in range(n)] for j in range(n)]
+
+# Initial population size
+pop_size = 100
+
+# Maximum number of generations
+max_gen = 1000
+
+# Cooling parameter
+cooling = 0.99
+
+# Mutation rate
+mut_rate = 0.01
+
+# Fitness function
+def fitness(path):
+    return sum(dist[path[i]][path[i+1]] for i in range(-1, n-1))
+
+# Initial population
+population = [random.sample(range(n), n) for i in range(pop_size)]
+
+# Main loop
+for gen in range(max_gen):
+
+    # Evaluate fitness of each individual
+    fit_values = [fitness(p) for p in population]
+
+    # Sort population by fitness
+    population = [x for _, x in sorted(zip(fit_values, population))]
+
+    # Print best fitness and path
+    print("Generation", gen, ":", fit_values[0])
+    print(population[0])
+
+    # Check if cooling parameter is below threshold
+    if cooling < 0.001:
+        break
+
+    # Select parents using roulette wheel selection
+    total_fit = sum(fit_values)
+    rel_fit = [f / total_fit for f in fit_values]
+    cum_fit = [sum(rel_fit[:i+1]) for i in range(pop_size)]
+    
+    parents = []
+    for i in range(pop_size):
+        r = random.random()
+        for j in range(pop_size):
+            if r < cum_fit[j]:
+                parents.append(population[j])
+                break
+    
+    # Perform crossover and mutation to produce offspring
+    offspring = []
+    for i in range(0, pop_size, 2):
+        p1 = parents[i]
+        p2 = parents[i+1]
+
+        # Crossover: partially mapped crossover (PMX)
+        cut1 = random.randint(0, n-2)
+        cut2 = random.randint(cut1+1, n-1)
+        seg1 = p1[cut1:cut2]
+        seg2 = p2[cut1:cut2]
+        map12 = dict(zip(seg1, seg2))
+        map21 = dict(zip(seg2, seg1))
+        c1 = [map21.get(x,x) for x in p1[:cut1]] + seg2 + [map21.get(x,x) for x in p1[cut2:]]
+        c2 = [map12.get(x,x) for x in p2[:cut1]] + seg1 + [map12.get(x,x) for x in p2[cut2:]]
+
+        # Mutation: swap two cities randomly
+        if random.random() < mut_rate:
+            i, j = random.sample(range(n), 2)
+            c1[i], c1[j] = c1[j], c1[i]
+            c2[i], c2[j] = c2[j], c2[i]
+
+        offspring.append(c1)
+        offspring.append(c2)
+
+    # Select survivors from parents and offspring using elitism
+    population.extend(offspring)
+    fit_values.extend([fitness(p) for p in offspring])
+    population = [x for _, x in sorted(zip(fit_values, population))][:pop_size]
+
+    # Decrease cooling parameter
+    cooling *= 0.99
