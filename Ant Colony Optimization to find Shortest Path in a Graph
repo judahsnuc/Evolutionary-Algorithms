@@ -1,0 +1,56 @@
+import numpy as np
+import random
+
+num_ants = 10
+num_nodes = 5
+alpha = 1
+beta = 2
+rho = 0.5
+Q = 1
+
+graph = np.array([[0, 10, 15, 20, 25],
+                  [10, 0, 12, 18, 22],
+                  [15, 12, 0, 9, 16],
+                  [20, 18, 9, 0, 14],
+                  [25, 22, 16, 14, 0]])
+
+pheromone = np.ones((num_nodes, num_nodes)) * 0.01
+
+def transition_prob(i, j):
+    if i == j or graph[i][j] == 0:
+        return 0
+    numerator = (pheromone[i][j] ** alpha) * ((1 / graph[i][j]) ** beta)
+    denominator = sum((pheromone[i][k] ** alpha) * ((1 / graph[i][k]) ** beta) for k in range(num_nodes) if k != i and graph[i][k] > 0)
+    return numerator / denominator
+
+def update_pheromone(paths):
+    global pheromone
+    pheromone = pheromone * (1 - rho)
+    for path in paths:
+        length = path_length(path)
+        for i in range(num_nodes):
+            j = (i + 1) % num_nodes
+            pheromone[path[i]][path[j]] += Q / length
+
+def path_length(path):
+    length = 0
+    for i in range(num_nodes):
+        j = (i + 1) % num_nodes
+        length += graph[path[i]][path[j]]
+    return length
+
+def shortest_path():
+    best_path = None
+    best_length = float('inf')
+    for _ in range(100):
+        paths = []
+        for _ in range(num_ants):
+            path = []
+            current_node = random.randint(0, num_nodes - 1)
+            path.append(current_node)
+            while len(path) < num_nodes:
+                probs = [transition_prob(current_node, j) for j in range(num_nodes)]
+                next_node = np.random.choice(range(num_nodes), p=probs)
+                path.append(next_node)
+                current_node = next_node
+            paths.append(path)
