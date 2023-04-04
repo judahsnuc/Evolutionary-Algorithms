@@ -1,0 +1,33 @@
+import random
+import math
+
+def distance(city1, city2):
+    return math.sqrt((city1[0] - city2[0])**2 + (city1[1] - city2[1])**2)
+
+def total_distance(cities):
+    return sum([distance(cities[i], cities[(i+1) % len(cities)]) for i in range(len(cities))])
+
+def acceptance_probability(old_cost, new_cost, temperature):
+    if new_cost < old_cost:
+        return 1.0
+    else:
+        return math.exp((old_cost - new_cost) / temperature)
+
+def anneal(cities):
+    temperature = 10000.0
+    cooling_rate = 0.9995
+    current_solution = cities[:]
+    best_solution = cities[:]
+    while temperature > 1:
+        i = random.randint(0, len(cities) - 1)
+        j = random.randint(0, len(cities) - 1)
+        current_solution[i], current_solution[j] = current_solution[j], current_solution[i]
+        current_cost = total_distance(current_solution)
+        best_cost = total_distance(best_solution)
+        if acceptance_probability(best_cost, current_cost, temperature) > random.random():
+            best_solution = current_solution[:]
+        temperature *= cooling_rate
+    return best_solution
+
+cities = [(random.randint(-1000, 1000), random.randint(-1000, 1000)) for i in range(100)]
+annealed_cities = anneal(cities)
