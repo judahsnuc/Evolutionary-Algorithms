@@ -1,0 +1,60 @@
+import random
+import math
+
+def fitness_function(x):
+    return math.sin(x)
+
+class Particle:
+    def __init__(self, position, velocity):
+        self.position = position
+        self.velocity = velocity
+        self.best_position = position
+        self.best_value = fitness_function(position)
+
+    def update_velocity(self, global_best_position):
+        w = 0.5
+        c1 = 1
+        c2 = 2
+        r1 = random.random()
+        r2 = random.random()
+        cognitive_component = c1 * r1 * (self.best_position - self.position)
+        social_component = c2 * r2 * (global_best_position - self.position)
+        self.velocity = w * self.velocity + cognitive_component + social_component
+
+    def update_position(self):
+        self.position += self.velocity
+        self.position = max(min(self.position, math.pi), -math.pi)
+
+    def update_best(self):
+        value = fitness_function(self.position)
+        if value > self.best_value:
+            self.best_position = self.position
+            self.best_value = value
+
+def generate_population(size):
+    particles = []
+    for _ in range(size):
+        position = random.uniform(-math.pi, math.pi)
+        velocity = random.uniform(-1, 1)
+        particle = Particle(position, velocity)
+        particles.append(particle)
+    return particles
+
+def particle_swarm_optimization(population_size, num_iterations):
+    population = generate_population(population_size)
+    global_best_position = max(population, key=lambda p: p.best_value).best_position
+    for iteration in range(num_iterations):
+        for particle in population:
+            particle.update_velocity(global_best_position)
+            particle.update_position()
+            particle.update_best()
+            global_best_position = max(population, key=lambda p: p.best_value).best_position
+    best_particle = max(population, key=lambda p: p.best_value)
+    worst_particle = min(population, key=lambda p: p.best_value)
+    return best_particle.position, worst_particle.position
+
+maxima, minima = particle_swarm_optimization(100, 1000)
+print(f"Maxima: {maxima}")
+print(f"Fitness: {fitness_function(maxima)}")
+print(f"Minima: {minima}")
+print(f"Fitness: {fitness_function(minima)}")
